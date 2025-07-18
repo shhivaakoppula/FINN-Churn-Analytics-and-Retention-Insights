@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FINN Customer Analytics Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            overflow-x: hidden;
+            height: 100vh;
+        }
+
+        .dashboard-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            gap: 15px;
+        }
+
+        /* Custom Header Styling */
+        .dashboard-header {
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .dashboard-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .dashboard-subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        /* Custom Grid Layout System */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            grid-template-rows: auto 1fr auto;
+            gap: 15px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* KPI Cards Section */
+        .kpi-section {
+            grid-column: 1;
+            grid-row: 1 / -1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .kpi-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 18px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+            flex: 1;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .kpi-card.selected {
+            background: rgba(255, 255, 255, 1);
+            border: 2px solid #3498db;
+        }
+
+        .kpi-header {
+            color: #2c3e50;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .kpi-value {
+            color: #2c3e50;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            line-height: 1;
+        }
+
+        .kpi-change {
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .kpi-change.positive { 
+            color: #27ae60; 
+        }
+        
+        .kpi-change.negative { 
+            color: #e74c3c; 
+        }
+
+        .kpi-metrics {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .metric-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 0.7rem;
+            margin-bottom: 3px;
+        }
+
+        .metric-value {
+            color: #2c3e50;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        /* Charts Section Layout */
+        .charts-section {
+            grid-column: 2;
+            grid-row: 1 / 3;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-title {
+            color: #2c3e50;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .chart-container {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+        }
+
+        /* Data Tables Layout */
+        .table-section {
+            grid-column: 3;
+            grid-row: 1 / 3;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .insights-section {
+            grid-column: 2 / 4;
+            grid-row: 3;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .data-table {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .table-title {
+            color: #2c3e50;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .table-container {
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            position: sticky;
+            top: 0;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .table tbody tr.selected {
+            background-color: rgba(52, 152, 219, 0.1);
+            border-left: 3px solid #3498db;
+        }
+
+        /* Status Badge System */
+        .status-badge {
+            padding: 3px 8px;
+            border-radius: 15px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-high-risk { 
+            background-color: #fee; 
+            color: #e74c3c; 
+        }
+        
+        .status-medium-risk { 
+            background-color: #fff3cd; 
+            color: #f39c12; 
+        }
+        
+        .status-low-risk { 
+            background-color: #d4edda; 
+            color: #27ae60; 
+        }
+
+        .insight-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .insight-title {
+            color: #2c3e50;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .insight-content {
+            color: #34495e;
+            line-height: 1.4;
+            font-size: 0.8rem;
+        }
+
+        .icon {
+            font-size: 1.2rem;
+        }
+
+        /* Trend Arrows */
+        .arrow-up::before {
+            content: "↗";
+            color: #27ae60;
+        }
+
+        .arrow-down::before {
+            content: "↘";
+            color: #e74c3c;
+        }
+
+        /* Risk Indicator Elements */
+        .risk-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .risk-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .risk-high { 
+            background-color: #e74c3c; 
+        }
+        
+        .risk-medium { 
+            background-color: #f39c12; 
+        }
+        
+        .risk-low { 
+            background-color: #27ae60; 
+        }
+
+        .risk-text {
+            font-size: 0.8rem;
+            color: #2c3e50;
+        }
+
+        /* Responsive Design Rules */
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 250px 1fr;
+                grid-template-rows: 1fr auto;
+            }
+            
+            .kpi-section {
+                grid-column: 1;
+                grid-row: 1;
+            }
+            
+            .charts-section {
+                grid-column: 2;
+                grid-row: 1;
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: 1fr 1fr;
+            }
+            
+            .table-section {
+                grid-column: 1;
+                grid-row: 2;
+            }
+            
+            .insights-section {
+                grid-column: 2;
+                grid-row: 2;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-title {
+                font-size: 2rem;
+            }
+            
+            .main-content {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto auto;
+            }
+            
+            .kpi-section {
+                grid-column: 1;
+                grid-row: 1;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+            
+            .charts-section {
+                grid-column: 1;
+                grid-row: 2;
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(4, 200px);
+            }
+            
+            .table-section {
+                grid-column: 1;
+                grid-row: 3;
+            }
+            
+            .insights-section {
+                grid-column: 1;
+                grid-row: 4;
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header Section -->
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">FINN ANALYTICS</h1>
+            <p class="dashboard-subtitle">Real-time Customer Intelligence Dashboard</p>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="main-content">
+            <!-- KPI Cards Column -->
+            <div class="kpi-section">
+                <div class="kpi-card">
+                    <div class="kpi-header">Revenue</div>
+                    <div class="kpi-value">€ 2.85M</div>
+                    <div class="kpi-change positive">
+                        <span class="arrow-up"></span>
+                        +7.2%
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-header">Subscribers</div>
+                    <div class="kpi-value">18,750</div>
+                    <div class="kpi-change positive">
+                        <span class="arrow-up"></span>
+                        +6.1%
+                    </div>
+                    <div class="risk-indicator">
+                        <div class="risk-dot risk-low"></div>
+                        <span class="risk-text">Low Churn Risk</span>
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-header">Vehicle Demand</div>
+                    <div class="kpi-value">3,420</div>
+                    <div class="kpi-change positive">
+                        <span class="arrow-up"></span>
+                        +4.8%
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-header">Financial</div>
+                    <div class="kpi-metrics">
+                        <div class="metric-item">
+                            <div class="metric-label">MRR</div>
+                            <div class="metric-value">€12.4K</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">ARPU</div>
+                            <div class="metric-value">€685</div>
+                        </div>
+                    </div>
+                    <div class="kpi-change positive">+8.3% MRR Growth</div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-header">Churn Alert</div>
+                    <div class="kpi-value">245</div>
+                    <div class="kpi-change negative">
+                        <span class="arrow-down"></span>
+                        At Risk
+                    </div>
+                    <div class="risk-indicator">
+                        <div class="risk-dot risk-high"></div>
+                        <span class="risk-text">€2.1M Revenue Impact</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="charts-section">
+                <div class="chart-card">
+                    <div class="chart-title">Demand Forecast</div>
+                    <div class="chart-container">
+                        <canvas id="demandChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-title">Subscriber Growth</div>
+                    <div class="chart-container">
+                        <canvas id="subscriptionChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-title">Churn by Segment</div>
+                    <div class="chart-container">
+                        <canvas id="churnChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-title">Revenue Mix</div>
+                    <div class="chart-container">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Tables Column -->
+            <div class="table-section">
+                <div class="data-table">
+                    <div class="table-title">Monthly Performance</div>
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Month</th>
+                                    <th>Revenue</th>
+                                    <th>Growth</th>
+                                    <th>Churn</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Jan</td>
+                                    <td>€2.65M</td>
+                                    <td class="kpi-change positive">+5.2%</td>
+                                    <td>1.8%</td>
+                                    <td><span class="status-badge status-low-risk">Good</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Feb</td>
+                                    <td>€2.72M</td>
+                                    <td class="kpi-change positive">+2.6%</td>
+                                    <td>2.1%</td>
+                                    <td><span class="status-badge status-low-risk">Good</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Mar</td>
+                                    <td>€2.78M</td>
+                                    <td class="kpi-change positive">+2.4%</td>
+                                    <td>1.9%</td>
+                                    <td><span class="status-badge status-low-risk">Excellent</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Apr</td>
+                                    <td>€2.81M</td>
+                                    <td class="kpi-change positive">+0.9%</td>
+                                    <td>2.3%</td>
+                                    <td><span class="status-badge status-medium-risk">Watch</span></td>
+                                </tr>
+                                <tr>
+                                    <td>May</td>
+                                    <td>€2.85M</td>
+                                    <td class="kpi-change positive">+1.2%</td>
+                                    <td>1.6%</td>
+                                    <td><span class="status-badge status-low-risk">Excellent</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun*</td>
+                                    <td>€2.95M</td>
+                                    <td class="kpi-change positive">+3.5%</td>
+                                    <td>1.4%</td>
+                                    <td><span class="status-badge status-low-risk">Forecast</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="data-table">
+                    <div class="table-title">At-Risk Customers</div>
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Segment</th>
+                                    <th>Count</th>
+                                    <th>Risk</th>
+                                    <th>CLV Impact</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Young Family</td>
+                                    <td>89</td>
+                                    <td><span class="status-badge status-high-risk">High</span></td>
+                                    <td>€890K</td>
+                                </tr>
+                                <tr>
+                                    <td>Urban Prof</td>
+                                    <td>72</td>
+                                    <td><span class="status-badge status-medium-risk">Med</span></td>
+                                    <td>€720K</td>
+                                </tr>
+                                <tr>
+                                    <td>Eco Conscious</td>
+                                    <td>54</td>
+                                    <td><span class="status-badge status-medium-risk">Med</span></td>
+                                    <td>€324K</td>
+                                </tr>
+                                <tr>
+                                    <td>Corporate</td>
+                                    <td>21</td>
+                                    <td><span class="status-badge status-low-risk">Low</span></td>
+                                    <td>€168K</td>
+                                </tr>
+                                <tr>
+                                    <td>Premium</td>
+                                    <td>9</td>
+                                    <td><span class="status-badge status-low-risk">Low</span></td>
+                                    <td>€90K</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Business Insights -->
+            <div class="insights-section">
+                <div class="insight-card">
+                    <div class="insight-title">
+                        <span class="icon"></span>
+                        Key Actions
+                    </div>
+                    <div class="insight-content">
+                        <strong>Immediate:</strong> Launch retention campaign for 89 Young Family customers (€890K at risk)
+                        <br><br>
+                        <strong>This Week:</strong> Optimize Urban Professional pricing strategy
+                        <br><br>
+                        <strong>ROI:</strong> Retention campaigns show 340% ROI potential
+                    </div>
+                </div>
+
+                <div class="insight-card">
+                    <div class="insight-title">
+                        <span class="icon"></span>
+                        Growth Outlook
+                    </div>
+                    <div class="insight-content">
+                        <strong>Q2 Forecast:</strong> €8.9M revenue (+12% QoQ)
+                        <br><br>
+                        <strong>Drivers:</strong> Electric vehicle demand +25%, Premium tier adoption +15%
+                        <br><br>
+                        <strong>Risk:</strong> Young Family churn requires immediate attention
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Chart Configuration Settings
+        Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        Chart.defaults.color = '#2c3e50';
+        Chart.defaults.font.size = 10;
+
+        // Initialize Demand Forecast Chart
+        const demandCanvas = document.getElementById('demandChart');
+        const demandContext = demandCanvas.getContext('2d');
+        
+        const demandVisualization = new Chart(demandContext, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Actual',
+                    data: [3180, 3250, 3350, 3280, 3420, null],
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 3
+                }, {
+                    label: 'Forecast',
+                    data: [null, null, null, null, 3420, 3650],
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    borderWidth: 2,
+                    borderDash: [5, 3],
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: { color: 'rgba(0,0,0,0.1)' },
+                        ticks: { font: { size: 9 } }
+                    },
+                    x: {
+                        grid: { color: 'rgba(0,0,0,0.1)' },
+                        ticks: { font: { size: 9 } }
+                    }
+                },
+                plugins: {
+                    legend: { position: 'top', labels: { font: { size: 9 } } }
+                }
+            }
+        });
+
+        // Initialize Subscription Growth Chart
+        const subscriptionCanvas = document.getElementById('subscriptionChart');
+        const subscriptionContext = subscriptionCanvas.getContext('2d');
+        
+        const subscriptionVisualization = new Chart(subscriptionContext, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Subscribers',
+                    data: [17850, 18100, 18400, 18520, 18750, 19200],
+                    borderColor: '#27ae60',
+                    backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: { color: 'rgba(0,0,0,0.1)' },
+                        ticks: { font: { size: 9 } }
+                    },
+                    x: {
+                        grid: { color: 'rgba(0,0,0,0.1)' },
+                        ticks: { font: { size: 9 } }
+                    }
+                },
+                plugins: {
+                    legend: { position: 'top', labels: { font: { size: 9 } } }
+                }
+            }
+        });
+
+        // Initialize Churn Rate Chart
+        const churnCanvas = document.getElementById('churnChart');
+        const churnContext = churnCanvas.getContext('2d');
+        
+        const churnVisualization = new Chart(churnContext, {
+            type: 'bar',
+            data: {
+                labels: ['Urban Pro', 'Young Fam', 'Corporate', 'Eco', 'Premium'],
+                datasets: [{
+                    label: 'Churn %',
+                    data: [8.2, 12.1, 6.5, 9.8, 7.1],
+                    backgroundColor: [
+                        'rgba(52, 152, 219, 0.8)',
+                        'rgba(231, 76, 60, 0.8)',
+                        'rgba(46, 204, 113, 0.8)',
+                        'rgba(243, 156, 18, 0.8)',
+                        'rgba(155, 89, 182, 0.8)'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.1)' },
+                        ticks: { font: { size: 9 } }
+                    },
+                    x: {
+                        grid: { color: 'rgba(0,0,0,0.1)' },
+                        ticks: { font: { size: 8 } }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+
+        // Initialize Revenue Distribution Chart
+        const revenueCanvas = document.getElementById('revenueChart');
+        const revenueContext = revenueCanvas.getContext('2d');
+        
+        const revenueVisualization = new Chart(revenueContext, {
+            type: 'doughnut',
+            data: {
+                labels: ['Urban Pro', 'Corporate', 'Young Fam', 'Eco', 'Premium'],
+                datasets: [{
+                    data: [985, 1204, 756, 542, 358],
+                    backgroundColor: [
+                        '#3498db',
+                        '#2ecc71',
+                        '#e74c3c',
+                        '#f39c12',
+                        '#9b59b6'
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 10,
+                            usePointStyle: true,
+                            font: { size: 8 }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Initialize Dashboard Timestamp
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentDateTime = new Date();
+            const formattedTimestamp = currentDateTime.toLocaleString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            const headerSubtitle = document.querySelector('.dashboard-subtitle');
+            headerSubtitle.innerHTML += ` • Updated: ${formattedTimestamp}`;
+        });
+
+        // Initialize Interactive Card Effects
+        const kpiCards = document.querySelectorAll('.kpi-card');
+        
+        kpiCards.forEach(function(card) {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-3px) scale(1.02)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+
+            card.addEventListener('click', function() {
+                // Remove selected class from all cards
+                kpiCards.forEach(function(otherCard) {
+                    otherCard.classList.remove('selected');
+                });
+                // Add selected class to clicked card
+                this.classList.add('selected');
+            });
+        });
+
+        // Initialize Table Row Interactions
+        const tableRows = document.querySelectorAll('.table tbody tr');
+        
+        tableRows.forEach(function(row) {
+            row.addEventListener('click', function() {
+                const existingSelected = document.querySelector('.table tbody tr.selected');
+                if (existingSelected) {
+                    existingSelected.classList.remove('selected');
+                }
+                this.classList.add('selected');
+            });
+        });
+
+        // Initialize Chart Interaction Handlers
+        function handleChartClick(event, activeElements, chart) {
+            if (activeElements.length > 0) {
+                const elementIndex = activeElements[0].index;
+                const datasetIndex = activeElements[0].datasetIndex;
+                const chartData = chart.data.datasets[datasetIndex].data[elementIndex];
+                console.log('Chart data point clicked:', chartData);
+            }
+        }
+
+        demandVisualization.options.onClick = handleChartClick;
+        subscriptionVisualization.options.onClick = handleChartClick;
+        churnVisualization.options.onClick = handleChartClick;
+        revenueVisualization.options.onClick = handleChartClick;
+
+        // Initialize Real-time Data Simulation
+        function simulateRealTimeUpdates() {
+            setInterval(function() {
+                const currentTime = new Date();
+                const minutes = currentTime.getMinutes();
+                
+                if (minutes % 5 === 0) {
+                    const revenueElement = document.querySelector('.kpi-card .kpi-value');
+                    const currentRevenue = parseFloat(revenueElement.textContent.replace('€ ', '').replace('M', ''));
+                    const fluctuation = (Math.random() - 0.5) * 0.1;
+                    const newRevenue = (currentRevenue + fluctuation).toFixed(2);
+                    revenueElement.textContent = `€ ${newRevenue}M`;
+                    
+                    // Update timestamp
+                    const updatedTime = currentTime.toLocaleString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    const subtitleElement = document.querySelector('.dashboard-subtitle');
+                    const baseText = 'Real-time Customer Intelligence Dashboard';
+                    subtitleElement.innerHTML = `${baseText} • Updated: ${updatedTime}`;
+                }
+            }, 60000); // Check every minute
+        }
+
+        // Start real-time updates
+        simulateRealTimeUpdates();
+
+        // Initialize Data Export Functionality
+        function exportDashboardData() {
+            const dashboardData = {
+                kpis: {
+                    revenue: '€ 2.85M',
+                    subscribers: 18750,
+                    vehicleDemand: 3420,
+                    churnAlerts: 245
+                },
+                monthlyPerformance: [
+                    {month: 'Jan', revenue: '€2.65M', growth: '+5.2%', churn: '1.8%'},
+                    {month: 'Feb', revenue: '€2.72M', growth: '+2.6%', churn: '2.1%'},
+                    {month: 'Mar', revenue: '€2.78M', growth: '+2.4%', churn: '1.9%'},
+                    {month: 'Apr', revenue: '€2.81M', growth: '+0.9%', churn: '2.3%'},
+                    {month: 'May', revenue: '€2.85M', growth: '+1.2%', churn: '1.6%'},
+                    {month: 'Jun', revenue: '€2.95M', growth: '+3.5%', churn: '1.4%'}
+                ],
+                atRiskCustomers: [
+                    {segment: 'Young Family', count: 89, risk: 'High', impact: '€890K'},
+                    {segment: 'Urban Prof', count: 72, risk: 'Medium', impact: '€720K'},
+                    {segment: 'Eco Conscious', count: 54, risk: 'Medium', impact: '€324K'},
+                    {segment: 'Corporate', count: 21, risk: 'Low', impact: '€168K'},
+                    {segment: 'Premium', count: 9, risk: 'Low', impact: '€90K'}
+                ],
+                exportedAt: new Date().toISOString()
+            };
+            
+            console.log('Dashboard Data Export:', JSON.stringify(dashboardData, null, 2));
+            return dashboardData;
+        }
+
+        // Initialize Keyboard Shortcuts
+        document.addEventListener('keydown', function(event) {
+            // Ctrl/Cmd + E to export data
+            if ((event.ctrlKey || event.metaKey) && event.key === 'e') {
+                event.preventDefault();
+                exportDashboardData();
+                console.log('Data exported to console');
+            }
+            
+            // Ctrl/Cmd + R to refresh charts
+            if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
+                event.preventDefault();
+                demandVisualization.update();
+                subscriptionVisualization.update();
+                churnVisualization.update();
+                revenueVisualization.update();
+                console.log('Charts refreshed');
+            }
+        });
+
+        // Initialize Chart Animation on Scroll/Visibility
+        function animateChartsOnVisibility() {
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        const chartCanvas = entry.target.querySelector('canvas');
+                        if (chartCanvas) {
+                            const chartId = chartCanvas.id;
+                            let chart;
+                            
+                            switch(chartId) {
+                                case 'demandChart':
+                                    chart = demandVisualization;
+                                    break;
+                                case 'subscriptionChart':
+                                    chart = subscriptionVisualization;
+                                    break;
+                                case 'churnChart':
+                                    chart = churnVisualization;
+                                    break;
+                                case 'revenueChart':
+                                    chart = revenueVisualization;
+                                    break;
+                            }
+                            
+                            if (chart) {
+                                chart.update('active');
+                            }
+                        }
+                    }
+                });
+            }, { threshold: 0.5 });
+
+            const chartCards = document.querySelectorAll('.chart-card');
+            chartCards.forEach(function(card) {
+                observer.observe(card);
+            });
+        }
+
+        // Initialize chart visibility animations
+        animateChartsOnVisibility();
+
+        // Initialize Performance Monitoring
+        function monitorDashboardPerformance() {
+            const performanceData = {
+                loadTime: performance.now(),
+                chartCount: 4,
+                kpiCount: 5,
+                tableRows: document.querySelectorAll('.table tbody tr').length,
+                memoryUsage: performance.memory ? {
+                    used: Math.round(performance.memory.usedJSHeapSize / 1024 / 1024),
+                    total: Math.round(performance.memory.totalJSHeapSize / 1024 / 1024),
+                    limit: Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)
+                } : null,
+                timestamp: new Date().toISOString()
+            };
+            
+            console.log('Dashboard Performance Metrics:', performanceData);
+            return performanceData;
+        }
+
+        // Monitor performance after full load
+        window.addEventListener('load', function() {
+            setTimeout(monitorDashboardPerformance, 1000);
+        });
+
+        // Initialize Error Handling
+        window.addEventListener('error', function(event) {
+            console.error('Dashboard Error:', {
+                message: event.message,
+                source: event.filename,
+                line: event.lineno,
+                column: event.colno,
+                timestamp: new Date().toISOString()
+            });
+        });
+
+        // Initialize Chart Refresh Function
+        function refreshAllCharts() {
+            try {
+                demandVisualization.destroy();
+                subscriptionVisualization.destroy();
+                churnVisualization.destroy();
+                revenueVisualization.destroy();
+                
+                // Reinitialize charts with updated data
+                location.reload();
+            } catch (error) {
+                console.error('Error refreshing charts:', error);
+            }
+        }
+
+        console.log('FINN Analytics Dashboard initialized successfully');
+        console.log('Available functions: exportDashboardData(), refreshAllCharts(), monitorDashboardPerformance()');
+        console.log('Keyboard shortcuts: Ctrl+E (export), Ctrl+R (refresh)');
+    </script>
+</body>
+</html>
