@@ -1,6 +1,6 @@
 # FINN Churn Analytics and Retention Insights
 
-Welcome to FINN Churn Analytics—your end-to-end solution for understanding, predicting, and reducing customer churn in subscription-based vehicle services. Built with industry-standard tools and best practices, this toolkit lets you generate realistic customer data, develop a reliable churn model, and visualize actionable insights in a clean, interactive dashboard.
+Welcome to FINN Churn Analytics your end-to-end solution for understanding, predicting, and reducing customer churn in subscription-based vehicle services. Built with industry-standard tools and best practices, this toolkit lets you generate realistic customer data, develop a reliable churn model, and visualize actionable insights in a clean, interactive dashboard.
 
 ## Key Capabilities
 
